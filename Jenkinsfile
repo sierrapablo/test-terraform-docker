@@ -5,8 +5,7 @@ pipeline {
     choice(
       name: 'MACHINE_SIZE',
       choices: ['s','m','l','xl'],
-      description: 'Tamaño de la máquina',
-      default: 's'
+      description: 'Tamaño de la máquina'
     )
   }
 
