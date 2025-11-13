@@ -11,5 +11,4 @@ output "container_id" {
 output "container_ip" {
   description = "The IP address of the container (if needed)"
   value       = docker_container.ubuntu.network_data[0].ip_address
-  // Esto solo funciona si usas el network "bridge" y el contenedor ya tiene IP asignada
 }

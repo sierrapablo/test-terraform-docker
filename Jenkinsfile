@@ -53,13 +53,11 @@ pipeline {
     stage('Container Info') {
       steps {
         dir('terraform') {
-          sh """
-            echo "Container created:"
-            terraform output container_name
-            echo ""
-            echo "To access:"
-            echo "docker exec -it \$(terraform output -raw container_name) bash"
-          """
+          script {
+            def container = sh(script: 'terraform output -raw container_name', returnStdout: true).trim()
+            echo "Container created: ${container}"
+            echo "To access: docker exec -it ${container} bash"
+          }
         }
       }
     }
