@@ -7,7 +7,7 @@ resource "docker_image" "hello" {
 # Contenedor hello-world
 resource "docker_container" "hello" {
   name  = "hello-world-container"
-  image = docker_image.hello.latest
+  image = docker_image.hello.image_id
 
   must_run = false # El contenedor se ejecuta una vez y sale.
 }
