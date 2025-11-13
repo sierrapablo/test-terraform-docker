@@ -1,3 +1,9 @@
+locals {
+  unique_str = "${var.machine_size}-${timestamp()}"
+
+  hash_suffix = substr(md5(local.unique_str), 0, 6)
+}
+
 # Imagen Ubuntu
 resource "docker_image" "ubuntu" {
   name         = "ubuntu:latest"
@@ -6,7 +12,7 @@ resource "docker_image" "ubuntu" {
 
 # Contenedor ubuntu con nombre único
 resource "docker_container" "ubuntu" {
-  name  = "ubuntu-${timestamp()}"
+  name  = "ubuntu-${var.machine_size}-${local.hash_suffix}"
   image = docker_image.ubuntu.image_id
 
   env     = ["DEBIAN_FRONTEND=noninteractive"]
