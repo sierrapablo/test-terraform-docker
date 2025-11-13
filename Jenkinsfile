@@ -4,7 +4,7 @@ pipeline {
   parameters {
       choice(
         name: 'MACHINE_SIZE',
-        choices: ['s', 'm', 'l'],
+        choices: ['s', 'm', 'l', 'xl'],
         description: 'Container size'
       )
   }
