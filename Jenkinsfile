@@ -1,6 +1,15 @@
 pipeline {
   agent any
 
+  parameters {
+    choice(
+      name: 'MACHINE_SIZE',
+      choices: ['s','m','l','xl'],
+      description: 'Tamaño de la máquina',
+      default: 's'
+    )
+  }
+
   environment {
     TF_IN_AUTOMATION = 'true'
     PLAN_FILE = 'plan.tfplan'
@@ -23,9 +32,28 @@ pipeline {
 
     stage('Terraform Plan') {
       steps {
-        echo 'Generando plan de ejecución...'
-        sh "terraform plan -out=${PLAN_FILE}"
-        archiveArtifacts artifacts: "${PLAN_FILE}", fingerprint: true
+        script {
+          def cpu, memory
+          switch(params.MACHINE_SIZE) {
+            case 's':
+              cpu = 1
+              memory = 500000000
+              break
+            case 'm':
+              cpu = 2
+              memory = 1000000000
+              break
+            case 'l':
+              cpu = 4
+              memory = 4000000000
+              break
+            case 'xl':
+              cpu = 0   // sin límite
+              memory = 0
+              break
+          }
+          sh "terraform plan -var='cpu=${cpu}' -var='memory=${memory}' -out=plan.tfplan"
+        }
       }
     }
 

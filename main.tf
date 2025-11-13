@@ -1,8 +1,3 @@
-# Generar un ID aleatorio para el contenedor
-resource "random_id" "suffix" {
-  byte_length = 3
-}
-
 # Imagen Ubuntu
 resource "docker_image" "ubuntu" {
   name         = "ubuntu:latest"
@@ -11,12 +6,13 @@ resource "docker_image" "ubuntu" {
 
 # Contenedor ubuntu con nombre único
 resource "docker_container" "ubuntu" {
-  name  = "ubuntu-${random_id.suffix.hex}"
+  name  = "ubuntu-${timestamp()}"
   image = docker_image.ubuntu.image_id
 
-  env = ["DEBIAN_FRONTEND=noninteractive"]
-
+  env     = ["DEBIAN_FRONTEND=noninteractive"]
   command = ["tail", "-f", "/dev/null"]
-
   restart = "unless-stopped"
+
+  cpu_shares = var.cpu * 1024 # Docker usa unidades relativas
+  memory     = var.memory
 }
