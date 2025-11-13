@@ -1,13 +1,30 @@
-# Imagen hello-world
-resource "docker_image" "hello" {
-  name         = "hello-world:latest"
-  keep_locally = false
+# Generar un ID aleatorio para el contenedor
+resource "random_id" "suffix" {
+  byte_length = 3
 }
 
-# Contenedor hello-world
-resource "docker_container" "hello" {
-  name  = "hello-world-container"
-  image = docker_image.hello.image_id
+# Imagen Ubuntu
+resource "docker_image" "ubuntu" {
+  name         = "ubuntu:latest"
+  keep_locally = true
+}
 
-  must_run = false # El contenedor se ejecuta una vez y sale.
+# Contenedor ubuntu con nombre único
+resource "docker_container" "ubuntu" {
+  name  = "ubuntu-${random_id.suffix.hex}"
+  image = docker_image.ubuntu.image_id
+
+  env = ["DEBIAN_FRONTEND=noninteractive"]
+
+  command = [
+    "bash", "-c",
+    "apt-get update && apt-get install -y passwd sudo && \
+     useradd -m -s /bin/bash ubuntu && \
+     echo 'ubuntu:ubuntu' | chpasswd && \
+     usermod -aG sudo ubuntu && \
+     echo 'root:root' | chpasswd && \
+     tail -f /dev/null"
+  ]
+
+  restart = "unless-stopped"
 }
