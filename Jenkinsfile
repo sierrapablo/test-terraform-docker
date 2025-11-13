@@ -2,74 +2,65 @@ pipeline {
   agent any
 
   parameters {
-    choice(
-      name: 'MACHINE_SIZE',
-      choices: ['s', 'm', 'l', 'xl'],
-      description: 'Tamaño de la máquina'
-    )
+      choice(
+        name: 'MACHINE_SIZE',
+        choices: ['s', 'm', 'l'],
+        description: 'Container size'
+      )
   }
 
   environment {
-    TF_IN_AUTOMATION = 'true'
-    PLAN_FILE        = 'plan.tfplan'
+      TF_VAR_machine_size = "${params.MACHINE_SIZE}"
   }
 
   stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
-    }
-
     stage('Terraform Init') {
       steps {
-        sh 'terraform init -input=false'
+        dir('terraform') {
+          sh 'terraform init -input=false'
+        }
       }
     }
 
     stage('Terraform Plan') {
       steps {
-        script {
-          def cpu, memory
-          switch (params.MACHINE_SIZE) {
-            case 's':
-              cpu = 1024
-              memory = 500000000
-              break
-            case 'm':
-              cpu = 2048
-              memory = 1000000000
-              break
-            case 'l':
-              cpu = 4096
-              memory = 4000000000
-              break
-            case 'xl':
-              cpu = 0
-              memory = 0
-              break
-          }
-
-          // Generar hash corto basado en BUILD_NUMBER para que sea único
-          def suffix = sh(script: "echo ${env.BUILD_NUMBER} | md5sum | cut -c1-6", returnStdout: true).trim()
-
-          sh "terraform plan -var='machine_size=${params.MACHINE_SIZE}' -var='cpu=${cpu}' -var='memory=${memory}' -var='container_suffix=${suffix}' -out=${PLAN_FILE}"
-          archiveArtifacts artifacts: "${PLAN_FILE}", fingerprint: true
+        dir('terraform') {
+          sh '''
+            terraform plan -out=plan.tfplan
+          '''
         }
       }
     }
 
-    stage('Approval') {
+    stage('Approve Plan') {
       steps {
         script {
-          input message: '¿Aplicar cambios de Terraform?', ok: 'Sí'
+          input message: "¿Aplicar este plan de Terraform para MACHINE_SIZE=${params.MACHINE_SIZE}?", ok: 'Aplicar'
         }
       }
     }
 
     stage('Terraform Apply') {
       steps {
-        sh "terraform apply ${PLAN_FILE}"
+        dir('terraform') {
+          sh '''
+            terraform apply -input=false plan.tfplan
+          '''
+        }
+      }
+    }
+
+    stage('Container Info') {
+      steps {
+        dir('terraform') {
+          sh """
+            echo "Container created:"
+            terraform output container_name
+            echo ""
+            echo "To access:"
+            echo "docker exec -it \$(terraform output -raw container_name) bash"
+          """
+        }
       }
     }
   }
