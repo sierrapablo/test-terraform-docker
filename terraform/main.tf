@@ -3,11 +3,14 @@ resource "docker_image" "ubuntu" {
 }
 
 resource "docker_container" "ubuntu" {
-  name  = "ubuntu-${var.machine_size}-${local.container_suffix}"
-  image = docker_image.ubuntu.image_id
+  for_each = {
+    "${var.machine_size}-${local.container_suffix}" = local.selected
+  }
 
-  cpu_shares = local.selected.cpu
-  memory     = local.selected.memory
+  name       = "ubuntu-${each.key}"
+  image      = docker_image.ubuntu.image_id
+  cpu_shares = each.value.cpu
+  memory     = each.value.memory
 
   command = ["tail", "-f", "/dev/null"]
   restart = "unless-stopped"
