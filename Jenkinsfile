@@ -4,27 +4,25 @@ pipeline {
   parameters {
     choice(
       name: 'MACHINE_SIZE',
-      choices: ['s','m','l','xl'],
+      choices: ['s', 'm', 'l', 'xl'],
       description: 'Tamaño de la máquina'
     )
   }
 
   environment {
     TF_IN_AUTOMATION = 'true'
-    PLAN_FILE = 'plan.tfplan'
+    PLAN_FILE        = 'plan.tfplan'
   }
 
   stages {
     stage('Checkout') {
       steps {
-        echo 'Clonando repositorio...'
         checkout scm
       }
     }
 
     stage('Terraform Init') {
       steps {
-        echo 'Inicializando Terraform...'
         sh 'terraform init -input=false'
       }
     }
@@ -33,25 +31,30 @@ pipeline {
       steps {
         script {
           def cpu, memory
-          switch(params.MACHINE_SIZE) {
+          switch (params.MACHINE_SIZE) {
             case 's':
-              cpu = 1
+              cpu = 1024
               memory = 500000000
               break
             case 'm':
-              cpu = 2
+              cpu = 2048
               memory = 1000000000
               break
             case 'l':
-              cpu = 4
+              cpu = 4096
               memory = 4000000000
               break
             case 'xl':
-              cpu = 0   // sin límite
+              cpu = 0
               memory = 0
               break
           }
-          sh "terraform plan -var='cpu=${cpu}' -var='memory=${memory}' -out=plan.tfplan"
+
+          // Generar hash corto basado en BUILD_NUMBER para que sea único
+          def suffix = sh(script: "echo ${env.BUILD_NUMBER} | md5sum | cut -c1-6", returnStdout: true).trim()
+
+          sh "terraform plan -var='machine_size=${params.MACHINE_SIZE}' -var='cpu=${cpu}' -var='memory=${memory}' -var='container_suffix=${suffix}' -out=${PLAN_FILE}"
+          archiveArtifacts artifacts: "${PLAN_FILE}", fingerprint: true
         }
       }
     }
@@ -66,7 +69,6 @@ pipeline {
 
     stage('Terraform Apply') {
       steps {
-        echo 'Aplicando plan...'
         sh "terraform apply ${PLAN_FILE}"
       }
     }
