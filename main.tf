@@ -17,13 +17,14 @@ resource "docker_container" "ubuntu" {
   env = ["DEBIAN_FRONTEND=noninteractive"]
 
   command = [
-    "bash", "-c",
-    "apt-get update && apt-get install -y passwd sudo && \
-     useradd -m -s /bin/bash ubuntu && \
-     echo 'ubuntu:ubuntu' | chpasswd && \
-     usermod -aG sudo ubuntu && \
-     echo 'root:root' | chpasswd && \
-     tail -f /dev/null"
+    "bash", "-c", <<EOT
+    apt-get update && apt-get install -y passwd sudo &&
+    useradd -m -s /bin/bash ubuntu &&
+    echo 'ubuntu:ubuntu' | chpasswd &&
+    usermod -aG sudo ubuntu &&
+    echo 'root:root' | chpasswd &&
+    tail -f /dev/null
+    EOT
   ]
 
   restart = "unless-stopped"
